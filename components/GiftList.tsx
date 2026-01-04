@@ -2,14 +2,15 @@
 import React, { useState, useMemo } from 'react';
 import { Gift, GiftCategory } from '../types';
 import { CATEGORY_COLORS } from '../constants';
-import { Gift as GiftIcon, CheckCircle2, Lock, Eye, EyeOff } from 'lucide-react';
+import { Gift as GiftIcon, CheckCircle2, Lock, Eye, EyeOff, LayoutList } from 'lucide-react';
 
 interface GiftListProps {
   gifts: Gift[];
   onSelectGift: (gift: Gift) => void;
+  isAdmin?: boolean;
 }
 
-export const GiftList: React.FC<GiftListProps> = ({ gifts, onSelectGift }) => {
+export const GiftList: React.FC<GiftListProps> = ({ gifts, onSelectGift, isAdmin = false }) => {
   const [filter, setFilter] = useState<GiftCategory | 'Todos'>('Todos');
   const [hideClaimed, setHideClaimed] = useState(false);
 
@@ -92,7 +93,10 @@ export const GiftList: React.FC<GiftListProps> = ({ gifts, onSelectGift }) => {
               group relative bg-white rounded-3xl overflow-hidden transition-all duration-500
               ${gift.claimed 
                 ? 'opacity-60 grayscale shadow-none border border-stone-100' 
-                : 'hover:shadow-2xl hover:-translate-y-2 border border-stone-100 shadow-lg shadow-stone-200/50'}
+                : isAdmin 
+                    ? 'border border-stone-100 shadow-sm' // Efeito menor para admin
+                    : 'hover:shadow-2xl hover:-translate-y-2 border border-stone-100 shadow-lg shadow-stone-200/50'
+              }
             `}
           >
             {/* Imagem com Overlay */}
@@ -101,7 +105,7 @@ export const GiftList: React.FC<GiftListProps> = ({ gifts, onSelectGift }) => {
               <img 
                 src={gift.image} 
                 alt={gift.name} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className={`w-full h-full object-cover transition-transform duration-700 ${!isAdmin && 'group-hover:scale-110'}`}
               />
               
               {/* Category Badge */}
@@ -136,7 +140,7 @@ export const GiftList: React.FC<GiftListProps> = ({ gifts, onSelectGift }) => {
             {/* Content */}
             <div className="p-6 flex flex-col h-[180px]">
               <div className="flex-1">
-                <h3 className="text-xl font-serif font-bold text-stone-800 mb-2 leading-tight line-clamp-2 group-hover:text-stone-600 transition-colors">
+                <h3 className="text-xl font-serif font-bold text-stone-800 mb-2 leading-tight line-clamp-2">
                   {gift.name}
                 </h3>
                 <div className="w-10 h-1 bg-gradient-to-r from-stone-200 to-transparent rounded-full mb-3" />
@@ -145,23 +149,32 @@ export const GiftList: React.FC<GiftListProps> = ({ gifts, onSelectGift }) => {
               {gift.claimed ? (
                 <div className="w-full py-3 bg-stone-100 text-stone-400 rounded-xl text-center text-sm font-bold border border-stone-200 flex items-center justify-center gap-2 cursor-not-allowed">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Já escolhido ❤️</span>
+                  <span>
+                    {isAdmin ? `Pego por: ${gift.claimedBy || 'Anônimo'}` : "Já escolhido ❤️"}
+                  </span>
                 </div>
               ) : (
-                <button
-                  onClick={() => onSelectGift(gift)}
-                  className="w-full py-3.5 bg-stone-900 text-white rounded-xl font-bold hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-stone-800/20 active:scale-95 group-hover:bg-stone-800"
-                >
-                  <GiftIcon className="w-4 h-4" />
-                  Quero Presentear
-                </button>
+                isAdmin ? (
+                    <div className="w-full py-3.5 bg-stone-50 text-stone-500 rounded-xl font-bold border border-stone-200 flex items-center justify-center gap-2 cursor-default opacity-80">
+                        <LayoutList className="w-4 h-4" />
+                        Disponível na lista
+                    </div>
+                ) : (
+                    <button
+                      onClick={() => onSelectGift(gift)}
+                      className="w-full py-3.5 bg-stone-900 text-white rounded-xl font-bold hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-stone-800/20 active:scale-95 group-hover:bg-stone-800"
+                    >
+                      <GiftIcon className="w-4 h-4" />
+                      Quero Presentear
+                    </button>
+                )
               )}
             </div>
           </div>
         ))}
       </div>
       
-      {displayedGifts.length === 0 && (
+      {displayedGifts.length === 0 && filter !== 'Todos' && (
         <div className="text-center py-20 bg-stone-50 rounded-3xl border border-stone-100">
           <p className="font-serif text-xl text-stone-500 italic mb-2">
             "Ops! Não encontramos itens..." 🎁

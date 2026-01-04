@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Gift } from '../types';
-import { Gift as GiftIcon, Utensils, Trash2, Loader2, PartyPopper, Ban, HeartHandshake, Check } from 'lucide-react';
+import { Gift as GiftIcon, Utensils, Trash2, PartyPopper, Ban, HeartHandshake } from 'lucide-react';
 import { ActionModal } from './ActionModal';
 
 interface MyContributionsProps {
@@ -21,7 +21,10 @@ export const MyContributions: React.FC<MyContributionsProps> = ({
   
   // States para controlar os Modais
   const [itemToRemove, setItemToRemove] = useState<string | null>(null);
-  const [showFoodModal, setShowFoodModal] = useState(false);
+  
+  // Mudamos de boolean para guardar a INTENÇÃO ('join' = quer entrar, 'leave' = quer sair)
+  // Isso impede que o texto mude sozinho enquanto carrega
+  const [foodModalMode, setFoodModalMode] = useState<'join' | 'leave' | null>(null);
 
   // Filtra presentes do usuário
   const myGifts = gifts.filter(
@@ -44,11 +47,17 @@ export const MyContributions: React.FC<MyContributionsProps> = ({
   };
 
   const confirmFoodToggle = async () => {
+    if (!foodModalMode) return;
+    
     setLoadingAction(true);
-    // Inverte o status atual
-    await onUpdateFoodStatus(!bringsFood);
+    
+    // Define o status alvo baseado no modo do modal, não no status atual que pode mudar
+    const targetStatus = foodModalMode === 'join'; 
+    
+    await onUpdateFoodStatus(targetStatus);
+    
     setLoadingAction(false);
-    setShowFoodModal(false);
+    setFoodModalMode(null);
   };
 
   // Prepara as mensagens do Modal de Remoção
@@ -147,7 +156,7 @@ export const MyContributions: React.FC<MyContributionsProps> = ({
 
             {/* Botão de Toggle */}
             <button
-              onClick={() => setShowFoodModal(true)}
+              onClick={() => setFoodModalMode(bringsFood ? 'leave' : 'join')}
               className={`
                 shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-lg w-full sm:w-auto justify-center
                 ${bringsFood 
@@ -186,17 +195,17 @@ export const MyContributions: React.FC<MyContributionsProps> = ({
 
       {/* === MODAL DE STATUS CHURRASCO === */}
       <ActionModal
-        isOpen={showFoodModal}
-        onClose={() => setShowFoodModal(false)}
+        isOpen={!!foodModalMode}
+        onClose={() => setFoodModalMode(null)}
         onConfirm={confirmFoodToggle}
-        title={bringsFood ? "Cancelar presença no churrasco?" : "Confirmar presença no churrasco?"}
+        title={foodModalMode === 'leave' ? "Cancelar presença no churrasco?" : "Confirmar presença no churrasco?"}
         description={
-          bringsFood 
+          foodModalMode === 'leave'
             ? "Ao cancelar, entendemos que você entregará o presente mas não participará do almoço. Seus presentes continuam garantidos!"
             : "Para participar do almoço, pedimos a contribuição de 1kg de carne por pessoa. Confirmar?"
         }
-        confirmLabel={bringsFood ? "Sim, cancelar churrasco" : "Sim, vou levar carne!"}
-        isDanger={bringsFood} // Danger se for cancelar
+        confirmLabel={foodModalMode === 'leave' ? "Sim, cancelar churrasco" : "Sim, vou levar carne!"}
+        isDanger={foodModalMode === 'leave'}
         isLoading={loadingAction}
       />
 
