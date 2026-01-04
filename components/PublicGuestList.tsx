@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Gift } from '../types';
 import { Users } from 'lucide-react';
@@ -8,13 +9,18 @@ interface PublicGuestListProps {
 
 export const PublicGuestList: React.FC<PublicGuestListProps> = ({ gifts }) => {
   // 1. Filtra quem já confirmou presente
-  const confirmedGifts = gifts.filter(g => g.claimed);
+  // 2. Filtra nomes vazios ou inválidos para evitar "Anônimo" indesejado
+  const confirmedGifts = gifts.filter(g => {
+    if (!g.claimed) return false;
+    if (!g.claimedBy) return false;
+    const name = g.claimedBy.trim();
+    return name.length > 0 && name.toLowerCase() !== 'anônimo';
+  });
 
   if (confirmedGifts.length === 0) return null;
 
-  // 2. Agrupa por nome para evitar duplicatas visuais
-  // Cria um Set de nomes únicos
-  const uniqueNames: string[] = Array.from(new Set(confirmedGifts.map(g => g.claimedBy || 'Anônimo')));
+  // 3. Agrupa por nome para evitar duplicatas visuais
+  const uniqueNames: string[] = Array.from(new Set(confirmedGifts.map(g => g.claimedBy!)));
 
   return (
     <div className="max-w-4xl mx-auto px-4 mb-16 mt-8 animate-fade-in">
