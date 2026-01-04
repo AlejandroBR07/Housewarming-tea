@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Gift } from '../types';
 import { generateThankYouMessage } from '../services/geminiService';
 import { claimGiftInSheet } from '../services/sheetService';
@@ -13,6 +13,7 @@ interface ConfirmModalProps {
   onClose: () => void;
   onConfirm: (giftId: string) => void;
   showToast: (msg: string, type: 'success' | 'error') => void;
+  isAlreadyConfirmedForBBQ?: boolean; // Nova prop
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
@@ -22,14 +23,18 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onUpdateBringsFood,
   onClose, 
   onConfirm, 
-  showToast 
+  showToast,
+  isAlreadyConfirmedForBBQ = false
 }) => {
   const [step, setStep] = useState<'confirm' | 'lunch_check' | 'processing' | 'success'>('confirm');
   const [finalMessage, setFinalMessage] = useState<string>('');
 
+  // Se o usuário já está confirmado, a flag efetiva de comida é TRUE
+  const effectiveBringsFood = isAlreadyConfirmedForBBQ ? true : bringsFood;
+
   const initiateConfirmation = () => {
-    // Se a pessoa NÃO marcou almoço, perguntamos se ela tem certeza
-    if (!bringsFood) {
+    // Se a pessoa NÃO marcou almoço E NÃO está confirmada ainda, perguntamos
+    if (!effectiveBringsFood) {
       setStep('lunch_check');
     } else {
       processConfirmation(true);
@@ -50,22 +55,18 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         onConfirm(gift.id);
         showToast("Presente confirmado com sucesso!", 'success');
     } else {
-        // Erro amigável - Como o Toast agora é no topo, o usuário verá isso!
         showToast("Não foi possível confirmar. Tente novamente ou verifique se o item já foi pego.", 'error');
         setStep('confirm');
     }
   };
 
   return (
-    // items-end no mobile cria o efeito de "Bottom Sheet"
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm transition-opacity animate-fade-in" 
         onClick={(step !== 'processing' && step !== 'success') ? onClose : undefined}
       />
 
-      {/* Modal Content - Animação slide-up no mobile, fade-in-up no desktop */}
       <div className="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up sm:animate-fade-in-up border-t-4 sm:border-4 border-white ring-1 ring-stone-200 max-h-[85vh] overflow-y-auto">
         
         {/* === STEP 1: CONFIRMAÇÃO DO PRESENTE === */}
@@ -92,12 +93,17 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 </div>
               </div>
 
-              {bringsFood && (
+              {effectiveBringsFood && (
                 <div className="flex items-center gap-3 text-green-700 bg-green-50 p-4 rounded-2xl border border-green-100">
                   <div className="bg-green-200 p-1.5 rounded-full shrink-0">
                     <Check className="w-4 h-4 text-green-700" />
                   </div>
-                  <span className="text-sm font-medium">Ah, e já anotamos que você vai participar do churrasco! (Levar 1kg de carne) 🍖</span>
+                  <span className="text-sm font-medium">
+                    {isAlreadyConfirmedForBBQ 
+                        ? "Como você já confirmou presença no churrasco, este item também será registrado assim! 🍖"
+                        : "Ah, e já anotamos que você vai participar do churrasco! (Levar 1kg de carne) 🍖"
+                    }
+                  </span>
                 </div>
               )}
             </div>
@@ -126,8 +132,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
              <div className="flex flex-col gap-3">
                <button 
                  onClick={() => {
-                   onUpdateBringsFood(true); // Atualiza estado no App
-                   processConfirmation(true); // Prossegue salvando como SIM
+                   onUpdateBringsFood(true); 
+                   processConfirmation(true);
                  }}
                  className="w-full bg-green-600 text-white py-3.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-md shadow-green-100"
                >
@@ -135,7 +141,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                </button>
 
                <button 
-                 onClick={() => processConfirmation(false)} // Prossegue salvando como NÃO
+                 onClick={() => processConfirmation(false)}
                  className="w-full bg-white border border-stone-200 text-stone-500 py-3 rounded-xl font-bold hover:bg-stone-50 transition-colors text-sm"
                >
                  Infelizmente não poderei ficar

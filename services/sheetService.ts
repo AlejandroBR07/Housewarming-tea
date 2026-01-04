@@ -78,7 +78,6 @@ export const claimGiftInSheet = async (giftId: string, guestName: string, brings
   }
 
   try {
-    // Usamos 'text/plain;charset=utf-8' para forçar Simple Request (sem Preflight)
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
       redirect: "follow",
@@ -97,13 +96,7 @@ export const claimGiftInSheet = async (giftId: string, guestName: string, brings
     
     try {
       const jsonResult = JSON.parse(textResult);
-      
-      if (jsonResult.status === 'success') {
-        return true;
-      } else {
-        console.error("Erro retornado pela API:", jsonResult.message);
-        return false;
-      }
+      return jsonResult.status === 'success';
     } catch (e) {
       console.error("A resposta da API não é um JSON válido:", textResult);
       return false;
@@ -111,6 +104,39 @@ export const claimGiftInSheet = async (giftId: string, guestName: string, brings
 
   } catch (error) {
     console.error("Erro fatal ao salvar na planilha:", error);
+    return false;
+  }
+};
+
+export const unclaimGiftInSheet = async (giftId: string, guestName: string): Promise<boolean> => {
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("COLE_SUA_URL_AQUI")) {
+    console.warn("URL da API não configurada. Simulando sucesso.");
+    return true;
+  }
+
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      redirect: "follow",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify({
+        action: 'unclaim', // Ação de liberar
+        giftId,
+        guestName
+      })
+    });
+    
+    const textResult = await response.text();
+    try {
+      const jsonResult = JSON.parse(textResult);
+      return jsonResult.status === 'success';
+    } catch (e) {
+      return false;
+    }
+  } catch (error) {
+    console.error("Erro ao remover presente:", error);
     return false;
   }
 };

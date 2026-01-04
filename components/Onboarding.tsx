@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Home, Heart, ArrowRight, Sparkles, AlertCircle, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Home, Heart, ArrowRight, Sparkles, AlertCircle, Check, UserCheck, LogOut } from 'lucide-react';
 import { Gift } from '../types';
 
 interface OnboardingProps {
@@ -11,12 +11,38 @@ interface OnboardingProps {
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, existingGifts }) => {
   const [name, setName] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [returningUser, setReturningUser] = useState<string | null>(null);
+
+  // Verifica se já existe um usuário salvo ao carregar
+  useEffect(() => {
+    const savedName = localStorage.getItem('cha_guest_name');
+    if (savedName) {
+      setReturningUser(savedName);
+    }
+  }, []);
+
+  const handleReturningUser = () => {
+    if (returningUser) {
+        // Verifica se é admin baseada na string salva (segurança fraca frontend apenas para UX)
+        const isAdmin = returningUser.toLowerCase() === 'emily thalya';
+        onComplete(returningUser, isAdmin);
+    }
+  };
+
+  const clearUser = () => {
+    localStorage.removeItem('cha_guest_name');
+    setReturningUser(null);
+    setName('');
+  };
 
   const checkNameAndSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     const cleanName = name.trim();
+
+    // Salva no navegador
+    localStorage.setItem('cha_guest_name', cleanName);
 
     // Verifica admin com nome corrigido
     if (cleanName.toLowerCase() === 'emily thalya') {
@@ -43,6 +69,45 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, existingGift
     setShowConfirmation(false);
   };
 
+  // TELA DE BOAS-VINDAS PARA USUÁRIO QUE RETORNA
+  if (returningUser) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-50/95 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full relative overflow-hidden border-4 border-stone-100 animate-fade-in-up">
+                <div className="text-center">
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 animate-bounce">
+                        <UserCheck className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-2xl font-serif font-bold text-stone-800 mb-2">Oi de novo!</h2>
+                    <h3 className="text-xl font-bold text-blue-600 mb-6">{returningUser}</h3>
+                    <p className="text-stone-500 mb-8 leading-relaxed text-sm">
+                        Quer continuar de onde parou e ver seus presentes?
+                    </p>
+
+                    <div className="flex flex-col gap-3">
+                        <button 
+                            onClick={handleReturningUser}
+                            className="w-full bg-stone-800 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-stone-900 transition-all shadow-lg hover:-translate-y-1"
+                        >
+                            <Check className="w-5 h-5" />
+                            Continuar como {returningUser.split(' ')[0]}
+                        </button>
+                        
+                        <button 
+                            onClick={clearUser}
+                            className="w-full bg-white border border-stone-200 text-stone-400 py-3 rounded-xl font-bold hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-colors text-sm flex items-center justify-center gap-2"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Não sou {returningUser.split(' ')[0]}, sair
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+  }
+
+  // TELA DE CONFIRMAÇÃO DE NOME DUPLICADO
   if (showConfirmation) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm animate-fade-in">
@@ -75,6 +140,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, existingGift
     );
   }
 
+  // TELA INICIAL (PRIMEIRO ACESSO OU APÓS SAIR)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-50/95 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full relative overflow-hidden border-4 border-stone-100">

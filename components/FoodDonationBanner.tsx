@@ -6,9 +6,22 @@ interface FoodDonationBannerProps {
   bringsFood: boolean;
   onToggle: (value: boolean) => void;
   guestName: string;
+  alreadyConfirmed?: boolean;
 }
 
-export const FoodDonationBanner: React.FC<FoodDonationBannerProps> = ({ bringsFood, onToggle, guestName }) => {
+export const FoodDonationBanner: React.FC<FoodDonationBannerProps> = ({ 
+    bringsFood, 
+    onToggle, 
+    guestName,
+    alreadyConfirmed = false
+}) => {
+  
+  // Se o usuário já está confirmado no churrasco globalmente (em outros itens), não mostramos este banner
+  // pois ele já cumpriu o requisito. O gerenciamento fica no componente MyContributions.
+  if (alreadyConfirmed) {
+      return null;
+  }
+
   return (
     <div className="max-w-3xl mx-auto -mt-6 sm:-mt-8 relative z-20 px-4 mb-8">
       <div 
