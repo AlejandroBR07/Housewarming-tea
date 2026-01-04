@@ -17,12 +17,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ gifts }) => {
 
   const claimedGifts = gifts.filter(g => g.claimed);
   
-  // Agrupamento para a imagem (Nomes Únicos)
-  const uniqueConfirmedNames: string[] = Array.from(new Set(claimedGifts.map(g => g.claimedBy || 'Anônimo')));
+  // Agrupamento para a imagem (Nomes Únicos), removendo "Anônimo" e vazios
+  const uniqueConfirmedNames: string[] = Array.from(new Set(
+    claimedGifts
+      .map(g => g.claimedBy)
+      .filter(name => name && name.trim().length > 0 && name.toLowerCase() !== 'anônimo') as string[]
+  ));
 
   const totalGifts = claimedGifts.length;
+  // Conta apenas pessoas válidas (sem anônimos) para o churrasco
   const uniqueFoodBringers = new Set(
-    claimedGifts.filter(g => g.bringsFood).map(g => g.claimedBy)
+    claimedGifts
+      .filter(g => g.bringsFood && g.claimedBy && g.claimedBy.toLowerCase() !== 'anônimo')
+      .map(g => g.claimedBy)
   ).size;
 
   useEffect(() => {
@@ -50,7 +57,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ gifts }) => {
         onclone: (documentClone) => {
             const element = documentClone.getElementById('story-container');
             if (element) {
-                // Remove transformações que podem afetar o render
                 element.style.transform = 'none';
             }
         }
@@ -139,7 +145,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ gifts }) => {
               ) : (
                 claimedGifts.map((gift) => (
                   <tr key={gift.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="p-4 text-stone-800 font-bold">{gift.claimedBy}</td>
+                    <td className="p-4 text-stone-800 font-bold">
+                        {(!gift.claimedBy || gift.claimedBy.toLowerCase() === 'anônimo') ? 
+                            <span className="text-stone-400 italic">Anônimo</span> : 
+                            gift.claimedBy
+                        }
+                    </td>
                     <td className="p-4 text-stone-600">
                       <div className="flex items-center gap-2">
                           <img src={gift.image} className="w-8 h-8 rounded-md object-cover border border-stone-200" alt="" />
@@ -253,7 +264,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ gifts }) => {
             {/* List */}
             <div className="grid grid-cols-1 gap-3 w-full">
                {uniqueConfirmedNames.slice(0, 16).map((name, idx) => (
-                 /* Correção de alinhamento: usando flex items-center e removendo line-heights fixos grandes */
                  <div key={idx} className="flex items-center gap-4 bg-white p-2 rounded-xl border border-stone-100 shadow-sm h-14">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-stone-100 to-stone-200 text-stone-600 font-bold text-sm uppercase shrink-0 flex items-center justify-center leading-none">
                       {name.charAt(0)}
